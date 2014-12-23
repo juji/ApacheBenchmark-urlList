@@ -1,0 +1,51 @@
+#!/bin/bash
+
+set -e
+
+SCRIPT=$(readlink -f $0)
+here=`dirname $SCRIPT`
+
+#: '
+#'
+
+yum install -y gcc gcc-c++ openssl-devel
+if [ -d "$here/dvnbin" ]; then rm -rf "$here/dvnbin"; fi
+mkdir dvnbin
+
+wget -c http://www.jujiyangasli.com/stuff/dvnbench/pcre-8.36.tar.gz
+wget -c http://www.jujiyangasli.com/stuff/dvnbench/httpd-2.4.10.tar.gz
+wget -c http://www.jujiyangasli.com/stuff/dvnbench/apr-1.5.1.tar.gz
+wget -c http://www.jujiyangasli.com/stuff/dvnbench/apr-util-1.5.4.tar.gz
+wget -c http://www.jujiyangasli.com/stuff/dvnbench/ab.c
+
+if [ -d "$here/pcre-8.36" ]; then rm -rf "$here/pcre-8.36"; fi
+mkdir "$here/dvnbin/pcre"
+tar -zxvf pcre-8.36.tar.gz -C "$here"
+cd pcre-8.36
+./configure --prefix="$here/dvnbin/pcre"
+make
+make install
+
+cd $here
+
+if [ -d "$here/httpd-2.4.10" ]; then rm -rf "$here/httpd-2.4.10"; fi
+if [ -d "$here/apr-1.5.1" ]; then rm -rf "$here/apr-1.5.1"; fi
+if [ -d "$here/apr-util-1.5.4" ]; then rm -rf "$here/apr-util-1.5.4"; fi
+
+tar -zxvf httpd-2.4.10.tar.gz -C "$here"
+tar -zxvf apr-1.5.1.tar.gz -C "$here"
+tar -zxvf apr-util-1.5.4.tar.gz -C "$here"
+
+cp ab.c httpd-2.4.10/support/ab.c
+mv apr-1.5.1 httpd-2.4.10/srclib/apr
+mv apr-util-1.5.4 httpd-2.4.10/srclib/apr-util
+
+cd httpd-2.4.10
+./configure --with-included-apr --with-pcre="$here/dvnbin/pcre"
+make
+
+cd $here
+if [ -f "$here/ab" ]; then rm -f "$here/ab"; fi
+cp httpd-2.4.10/support/ab ab
+chmod +x ab
+
